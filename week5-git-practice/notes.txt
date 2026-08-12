@@ -1,0 +1,1 @@
+Learning Git and version control for SQA automation.
