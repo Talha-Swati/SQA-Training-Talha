@@ -1,2 +1,3 @@
 Learning Git and version control for SQA automation.Learning Git and version control for SQA automation.
 Branches allow us to make changes without affecting the main branch.
+This is a wrong broken line.
