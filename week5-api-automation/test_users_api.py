@@ -1,123 +1,79 @@
 import requests
+import pytest
+import json
+
+BASE_URL = "https://reqres.in/api"
 API_KEY = "free_user_3HX1rLoxrzgyA5WpxMc3rpqcUle"
+
+
 headers = {
-    "x-api-key": API_KEY,
-    "Content-Type": "application/json"
+    "x-api-key": API_KEY
 }
 
-def test_get_users_list():
+
+# Test 1: Parameterized GET user testing
+@pytest.mark.parametrize("user_id, expected_status", [
+    (2, 200),
+    (999, 404),
+    (23, 404)
+])
+def test_get_user_status(user_id, expected_status):
     response = requests.get(
-        "https://reqres.in/api/users?page=2",
+        f"{BASE_URL}/users/{user_id}",
         headers=headers
     )
 
-    print("Status Code:", response.status_code)
-    print("Response Body:", response.text)
-
-    assert response.status_code == 200, \
-        f"Expected 200, got {response.status_code}"
-
-    print("PASS: test_get_users_list")
+    assert response.status_code == expected_status
 
 
-def test_get_single_user():
-    response = requests.get(
-        "https://reqres.in/api/users/2",
-        headers=headers
-    )
+# Test 2: Parameterized PUT update testing
+@pytest.mark.parametrize("user_id, name, job", [
+    (2, "John", "QA Engineer"),
+    (3, "Ali", "Developer"),
+    (4, "Sara", "Tester")
+])
+def test_update_user(user_id, name, job):
 
-    print("Status Code:", response.status_code)
-    print("Response Body:", response.text)
-
-    assert response.status_code == 200, \
-        f"Expected 200, got {response.status_code}"
-
-    data = response.json()
-
-    assert data["data"]["id"] == 2, \
-        "User ID doesn't match"
-
-    assert "email" in data["data"], \
-        "Email field is missing"
-
-    print("PASS: test_get_single_user")
-
-
-def test_get_non_existent_user():
-    response = requests.get(
-        "https://reqres.in/api/users/999",
-        headers=headers
-    )
-
-    print("Status Code:", response.status_code)
-    print("Response Body:", response.text)
-
-    assert response.status_code == 404, \
-        f"Expected 404, got {response.status_code}"
-
-    print("PASS: test_get_non_existent_user")
-
-
-def test_create_user():
     payload = {
-        "name": "John",
-        "job": "QA Engineer"
-    }
-
-    response = requests.post(
-        "https://reqres.in/api/users",
-        headers=headers,
-        json=payload
-    )
-
-    print("Status Code:", response.status_code)
-    print("Response Body:", response.text)
-
-    assert response.status_code == 201, \
-        f"Expected 201, got {response.status_code}"
-
-    data = response.json()
-
-    assert data["name"] == "John", \
-        "Name doesn't match"
-
-    assert data["job"] == "QA Engineer", \
-        "Job doesn't match"
-
-    print("PASS: test_create_user")
-
-
-def test_update_user():
-    payload = {
-        "name": "John Updated",
-        "job": "Senior QA"
+        "name": name,
+        "job": job
     }
 
     response = requests.put(
-        "https://reqres.in/api/users/2",
-        headers=headers,
-        json=payload
+        f"{BASE_URL}/users/{user_id}",
+        json=payload,
+        headers=headers
     )
 
-    print("Status Code:", response.status_code)
-    print("Response Body:", response.text)
-
-    assert response.status_code == 200, \
-        f"Expected 200, got {response.status_code}"
+    assert response.status_code == 200
 
     data = response.json()
 
-    assert data["name"] == "John Updated", \
-        "Name doesn't match"
-
-    assert data["job"] == "Senior QA", \
-        "Job doesn't match"
-
-    print("PASS: test_update_user")
+    assert data["name"] == name
+    assert data["job"] == job
 
 
-test_get_users_list()
-test_get_single_user()
-test_get_non_existent_user()
-test_create_user()
-test_update_user()
+# Read POST test data from JSON file
+with open("test_data.json", "r") as file:
+    test_users = json.load(file)
+
+
+# Test 3: POST users using JSON test data
+@pytest.mark.parametrize("user", test_users)
+def test_create_user(user):
+
+    response = requests.post(
+        f"{BASE_URL}/users",
+        json=user,
+        headers=headers
+    )
+
+    assert response.status_code == 201
+
+    data = response.json()
+
+    assert data["name"] == user["name"]
+    assert data["job"] == user["job"]
+
+    assert "id" in data
+    assert "createdAt" in data
