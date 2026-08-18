@@ -49,7 +49,7 @@ def login(email, password=None):
         "email": email
     }
 
-    if password:
+    if password is not None:
         body["password"] = password
 
     return requests.post(
