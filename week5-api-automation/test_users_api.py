@@ -1,14 +1,7 @@
-import requests
 import pytest
 import json
 
-BASE_URL = "https://reqres.in/api"
-API_KEY = "free_user_3HX1rLoxrzgyA5WpxMc3rpqcUle"
-
-
-headers = {
-    "x-api-key": API_KEY
-}
+from api_helpers import get_user, update_user, create_user
 
 
 # Test 1: Parameterized GET user testing
@@ -18,10 +11,14 @@ headers = {
     (23, 404)
 ])
 def test_get_user_status(user_id, expected_status):
-    response = requests.get(
-        f"{BASE_URL}/users/{user_id}",
-        headers=headers
-    )
+
+    response = get_user(user_id)
+
+    if response.status_code != expected_status:
+        print(
+            f"FAILED: {response.url} -> "
+            f"{response.status_code} -> {response.text}"
+        )
 
     assert response.status_code == expected_status
 
@@ -39,11 +36,13 @@ def test_update_user(user_id, name, job):
         "job": job
     }
 
-    response = requests.put(
-        f"{BASE_URL}/users/{user_id}",
-        json=payload,
-        headers=headers
-    )
+    response = update_user(user_id, payload)
+
+    if response.status_code != 200:
+        print(
+            f"FAILED: {response.url} -> "
+            f"{response.status_code} -> {response.text}"
+        )
 
     assert response.status_code == 200
 
@@ -62,11 +61,13 @@ with open("test_data.json", "r") as file:
 @pytest.mark.parametrize("user", test_users)
 def test_create_user(user):
 
-    response = requests.post(
-        f"{BASE_URL}/users",
-        json=user,
-        headers=headers
-    )
+    response = create_user(user)
+
+    if response.status_code != 201:
+        print(
+            f"FAILED: {response.url} -> "
+            f"{response.status_code} -> {response.text}"
+        )
 
     assert response.status_code == 201
 
