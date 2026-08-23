@@ -6,7 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 driver = webdriver.Chrome()
 driver.get("https://www.saucedemo.com")
 
-wait = WebDriverWait(driver, 10)
+wait = WebDriverWait(driver, 0.001)
 
 username_field = wait.until(
     EC.presence_of_element_located((By.ID, "user-name"))
