@@ -17,9 +17,15 @@ class InventoryPage:
         products = self.wait.until(
             EC.presence_of_all_elements_located(self.products)
         )
+        print(f"Found {len(products)} products on inventory page")
         return len(products)
 
+    def get_product_names(self):
+        names = self.driver.find_elements(By.CLASS_NAME, "inventory_item_name")
+        return [name.text for name in names]
+
     def sort_by(self, option):
+        print(f"Sorting products by '{option}'")
         dropdown = self.wait.until(
             EC.presence_of_element_located(self.sort_dropdown)
         )
@@ -28,6 +34,7 @@ class InventoryPage:
         select.select_by_value(option)
 
     def add_product_to_cart(self, product_name):
+        print(f"Adding '{product_name}' to cart")
         products = self.driver.find_elements(By.CLASS_NAME, "inventory_item")
 
         for product in products:
@@ -42,10 +49,13 @@ class InventoryPage:
 
     def get_cart_count(self):
         try:
-            return int(
+            count = int(
                 self.wait.until(
                     EC.presence_of_element_located(self.cart_badge)
                 ).text
             )
+            print(f"Cart badge count: {count}")
+            return count
         except:
+            print("Cart badge not found, treating cart as empty")
             return 0
