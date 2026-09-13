@@ -45,3 +45,19 @@ def test_checkout_requires_first_name(driver):
     checkout_page.click_continue()
 
     assert "First Name is required" in checkout_page.get_error_message()
+
+
+def test_checkout_with_empty_cart(driver):
+    login_page = LoginPage(driver)
+    login_page.load()
+    login_page.login("standard_user", "secret_sauce")
+
+    cart_page = CartPage(driver)
+    cart_page.open_cart()
+    assert cart_page.get_cart_items() == []
+
+    # Actual SauceDemo behavior: it does not block checkout for an empty
+    # cart. Clicking "Checkout" on an empty cart still proceeds to the
+    # checkout information form.
+    cart_page.go_to_checkout()
+    assert "checkout-step-one" in driver.current_url

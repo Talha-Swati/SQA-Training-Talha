@@ -14,9 +14,11 @@ class LoginPage:
         self.error_message = (By.CSS_SELECTOR, "[data-test='error']")
 
     def load(self):
+        print("Loading SauceDemo login page")
         self.driver.get("https://www.saucedemo.com")
 
     def login(self, username, password):
+        print(f"Logging in as {username}")
         self.wait.until(
             EC.presence_of_element_located(self.username_field)
         ).send_keys(username)
@@ -25,6 +27,8 @@ class LoginPage:
         self.driver.find_element(*self.login_button).click()
 
     def get_error_message(self):
-        return self.wait.until(
+        message = self.wait.until(
             EC.presence_of_element_located(self.error_message)
         ).text
+        print(f"Login error message: {message}")
+        return message

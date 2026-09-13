@@ -17,26 +17,33 @@ class CheckoutPage:
         self.error_message = (By.CSS_SELECTOR, "[data-test='error']")
 
     def fill_checkout_info(self, first_name, last_name, zip_code):
+        print(f"Filling checkout info: {first_name} {last_name}, {zip_code}")
         self.driver.find_element(*self.first_name).send_keys(first_name)
         self.driver.find_element(*self.last_name).send_keys(last_name)
         self.driver.find_element(*self.zip_code).send_keys(zip_code)
 
     def click_continue(self):
+        print("Clicking continue")
         self.wait.until(
             EC.element_to_be_clickable(self.continue_button)
         ).click()
 
     def click_finish(self):
+        print("Clicking finish")
         self.wait.until(
             EC.element_to_be_clickable(self.finish_button)
         ).click()
 
     def get_confirmation_message(self):
-        return self.wait.until(
+        message = self.wait.until(
             EC.visibility_of_element_located(self.confirmation_message)
         ).text
+        print(f"Checkout confirmation message: {message}")
+        return message
 
     def get_error_message(self):
-        return self.wait.until(
+        message = self.wait.until(
             EC.visibility_of_element_located(self.error_message)
         ).text
+        print(f"Checkout error message: {message}")
+        return message
