@@ -1,82 +1,59 @@
-# Week 7 Cypress Basics
+# Week 7 - Cypress Basics
 
-This project is a Cypress-based UI automation suite for the SauceDemo (`https://www.saucedemo.com`) login flow. It converts 3 of the simplest Week 6 Selenium tests (valid login, invalid login, locked-out user) into Cypress, so the two tools can be compared directly on the same scenarios.
+Day 1: first look at Cypress, converted 3 of the Week 6 Selenium login tests over to compare the two directly.
+Day 2: fixtures, a data-driven test, and a custom command.
 
-## Install Dependencies
-
-Run:
+## Setup
 
 ```bash
 npm install
+npx cypress open        # interactive test runner
+npx cypress run          # headless, runs everything in cypress/e2e
 ```
 
-## Run Tests
+## What's in here
 
-Open the interactive Cypress Test Runner (pick `E2E Testing`, choose a browser, then click `login.cy.js`):
+- `cypress.config.js` - baseUrl set to saucedemo.com so tests don't repeat the URL every time
+- `cypress/fixtures/users.json` - login credentials for the 3 login scenarios
+- `cypress/fixtures/products.json` - product names for the data-driven cart test
+- `cypress/support/commands.js` - custom `cy.login(username, password)` command
+- `cypress/e2e/login.cy.js` - login tests, pulling data from `users.json`
+- `cypress/e2e/cart.cy.js` - loops through `products.json` and adds each one to the cart
+- rest is just the default Cypress scaffold
 
-```bash
-npx cypress open
-```
+## Tests
 
-Run headlessly from the CLI (used for the timing comparison below):
+`login.cy.js` (converted from week6/tests/test_login.py, now fixture-driven):
+1. Valid login -> ends up on the inventory page
+2. Invalid login -> shows "Username and password do not match"
+3. Locked out user -> shows "Sorry, this user has been locked out" (checked the exact wording on the live site first - full message is "Epic sadface: Sorry, this user has been locked out.")
 
-```bash
-npx cypress run --spec "cypress/e2e/login.cy.js"
-```
+`cart.cy.js`:
+4. Reads 3 product names from `products.json`, adds each to the cart by clicking `[data-test="add-to-cart-<slug>"]` (slug = product name lowercased, spaces to hyphens - matches the site's actual attribute), then checks the cart badge equals 3
 
-## Project Structure
+All 4 pass.
 
-```text
-week7-cypress-basics/
-│
-├── cypress.config.js
-├── package.json
-├── README.md
-├── cypress/
-│   ├── e2e/
-│   │   └── login.cy.js
-│   ├── fixtures/
-│   │   └── example.json
-│   └── support/
-│       ├── commands.js
-│       └── e2e.js
-```
+## Fixtures
 
-### cypress.config.js
+Same idea as `test_data.json` in the Week 5 API framework - keep test data out of the test file itself. `cy.fixture('users').as('users')` loads the JSON and makes it available as `this.users` inside the test (needs a regular `function () {}`, not an arrow function, since `this` binding is how Cypress attaches aliases).
 
-Configures Cypress's e2e testing mode and sets `baseUrl` to `https://www.saucedemo.com`.
+## Custom command
 
-### cypress/e2e/login.cy.js
+Every test needs to log in first, so that's now `cy.login(username, password)` in `cypress/support/commands.js` instead of repeating visit/type/type/click in every test. All 4 tests use it now.
 
-Contains the 3 converted test cases, described below.
+## Cypress vs Selenium - what I noticed (from Day 1)
 
-## Test Coverage
+- No more `WebDriverWait` everywhere. `cy.get()` just retries on its own until the element shows up.
+- Cypress runs in the same process as the browser instead of talking to it through a driver, so when something fails the error points straight at the command, not a WebDriver stack trace.
+- Selenium's fixture opens a brand new Chrome window for every test. Cypress kept one browser open for all tests in a file - that's the main reason it's faster (see below).
+- Less boilerplate to write. `cy.get('#user-name').type(...)` vs `driver.find_element(By.ID, "user-name").send_keys(...)`.
+- Assertions chain right onto the command (`.should(...)`) instead of a separate `assert` line after.
 
-Converted from `week6-selenium-basics/tests/test_login.py`:
+## Speed
 
-* Valid login (`standard_user` / `secret_sauce`) redirects to the inventory page
-* Invalid login (wrong username/password) shows the "Username and password do not match" error
-* Locked-out user (`locked_out_user` / `secret_sauce`) shows the "Sorry, this user has been locked out" error
+Same 3 login scenarios, both against the live SauceDemo site:
 
-All 3 tests pass.
+- Selenium (`test_login.py`, pytest): **31s** for 3 tests - new Chrome window each time
+- Cypress (`login.cy.js`): **5-6s** for 3 tests - one browser reused for the whole file
 
-## Cypress vs Selenium — Observations
-
-Having now written the same 3 login tests in both tools, a few things stood out:
-
-1. **No explicit waits needed.** In Selenium every element lookup went through a `WebDriverWait` + `expected_conditions` call in the page objects. In Cypress, `cy.get(...)` just retries automatically until the element appears (or times out), so none of that wrapper code was necessary.
-2. **Tests run inside the browser, not through a separate driver.** Selenium talks to Chrome through the ChromeDriver process over a wire protocol; Cypress's test code executes directly in the same run loop as the browser, which is also why its error messages and command log point straight at the failing step instead of a WebDriver stack trace.
-3. **One browser, many tests.** Selenium's `driver` fixture launches a brand-new Chrome window for every single test, while all 3 Cypress tests ran in one shared Electron browser instance for the whole spec file — this is the single biggest reason the Cypress run was faster (see timing below).
-4. **Syntax is shorter and reads more like the DOM.** `cy.get('#user-name').type(...)` versus `driver.find_element(*locator).send_keys(...)` — Cypress's jQuery-like chaining removed a lot of the `By.ID` / tuple-locator boilerplate that the Selenium page objects needed.
-5. **Assertions are built into the chain.** `.should('include', ...)` reads as part of the same command chain, whereas Selenium needed a separate `assert` statement after fetching the value with a page-object method.
-
-## Speed Comparison
-
-Both runs cover the same 3 scenarios (valid login, invalid login, locked-out user) against the live SauceDemo site.
-
-| Suite | Tool | Browser strategy | Reported test time |
-|---|---|---|---|
-| `week6-selenium-basics/tests/test_login.py` | Selenium + pytest | New Chrome window per test (function-scoped `driver` fixture) | **31.04s** for 3 tests (`pytest -v`) |
-| `week7-cypress-basics/cypress/e2e/login.cy.js` | Cypress | One shared headless Electron browser for the whole spec | **5–6s** for 3 tests (Cypress's own reported spec duration; `npx cypress run` wall-clock including Electron startup was ~20s) |
-
-Cypress's actual test execution was roughly **5x faster** than Selenium for the same 3 scenarios. Most of that gap comes from Selenium re-launching a full Chrome instance for every test, while Cypress reuses one browser across the whole file — the per-command speed (typing, clicking, asserting) is fast in both tools, but browser startup dominates the Selenium timing here.
+Cypress was roughly 5x faster here. Mostly comes down to not relaunching the browser between tests - the actual typing/clicking/asserting speed felt about the same in both.
