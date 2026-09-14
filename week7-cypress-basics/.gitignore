@@ -1,0 +1,6 @@
+node_modules/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress_run_output.txt
+run_debug.log
